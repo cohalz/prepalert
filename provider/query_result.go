@@ -163,6 +163,35 @@ func (qr *QueryResult) ToBorderlessTable() string {
 	)
 }
 
+func (qr *QueryResult) ToScrapboxTable() string {
+	var builder strings.Builder
+	fmt.Fprintln(&builder, "table:result")
+	for i, column := range qr.Columns {
+		fmt.Fprint(&builder, column)
+		if i < len(qr.Columns)-1 {
+			fmt.Print("\t")
+		} else {
+			fmt.Println()
+		}
+	}
+
+	for i, row := range qr.Rows {
+		for j, column := range qr.Columns {
+			var columnStr string
+			if err := json.Unmarshal(row[j], &columnStr); err != nil {
+				columnStr = string(column)
+			}
+			fmt.Fprint(&builder, columnStr)
+			if i < len(qr.Columns)-1 {
+				fmt.Print("\t")
+			} else {
+				fmt.Println()
+			}
+		}
+	}
+	return builder.String()
+}
+
 func (qr *QueryResult) ToMarkdownTable() string {
 	return qr.ToTable(
 		func(table *tablewriter.Table) {

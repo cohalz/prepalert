@@ -99,6 +99,12 @@ func WithFunctions(evalCtx *hcl.EvalContext) *hcl.EvalContext {
 				return qr.ToBorderlessTable(), nil
 			},
 		),
+		"result_to_scrapbox": newConvertFunctionForQueryResult(
+			"convert query_result to scrapbox table format function",
+			func(qr *QueryResult) (string, error) {
+				return qr.ToScrapboxTable(), nil
+			},
+		),
 	}
 	return child
 }
