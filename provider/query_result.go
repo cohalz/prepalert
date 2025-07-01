@@ -165,14 +165,16 @@ func (qr *QueryResult) ToBorderlessTable() string {
 
 func (qr *QueryResult) ToScrapboxTable() string {
 	var builder strings.Builder
-	fmt.Fprintln(&builder, "table:result")
-	fmt.Fprint(&builder, " ")
+	fmt.Printf("Columns num: %d\n", len(qr.Columns))
+	fmt.Printf("Rows num: %d\n", len(qr.Rows))
+	fmt.Fprint(&builder, "table:result\n ")
 	for i, column := range qr.Columns {
 		fmt.Fprint(&builder, column)
+		fmt.Printf("Columns i: %d\n", i)
 		if i < len(qr.Columns)-1 {
 			fmt.Fprint(&builder, "\t")
 		} else {
-			fmt.Fprintln(&builder)
+			fmt.Fprint(&builder, "\n")
 		}
 	}
 
@@ -187,7 +189,7 @@ func (qr *QueryResult) ToScrapboxTable() string {
 			if i < len(qr.Columns)-1 {
 				fmt.Fprint(&builder, "\t")
 			} else {
-				fmt.Fprintln(&builder)
+				fmt.Fprint(&builder, "\n")
 			}
 		}
 	}
