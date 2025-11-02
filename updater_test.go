@@ -123,3 +123,56 @@ func TestUpdater__RewritePrepalertSection(t *testing.T) {
 	err := u.Flush(context.Background(), hclutil.NewEvalContext())
 	require.NoError(t, err)
 }
+
+func TestUpdater__PostGraphAnnotationWithTitle(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	g := goldie.New(t, goldie.WithFixtureDir("testdata/fixture/"), goldie.WithNameSuffix(".golden"))
+	client := mock.NewMockMackerelClient(ctrl)
+	backend := mock.NewMockBackend(ctrl)
+
+	client.EXPECT().FindGraphAnnotations(gomock.Any(), gomock.Any(), gomock.Any()).Return([]*mackerel.GraphAnnotation{}, nil).Times(1)
+	client.EXPECT().CreateGraphAnnotation(gomock.Any()).DoAndReturn(
+		func(param *mackerel.GraphAnnotation) (*mackerel.GraphAnnotation, error) {
+			g.AssertJson(t, "updater_post_graph_annotation_with_title", param)
+			param.ID = "dummy-graph-annotation-id"
+			return param, nil
+		},
+	).Times(1)
+
+	svc := prepalert.NewMackerelService(client)
+	body := LoadJSON[prepalert.WebhookBody](t, "example_webhook.json")
+	u := svc.NewMackerelUpdater(&body, backend)
+	u.AddService("test-service")
+	u.AddTitle("test-service", "Custom Alert Title")
+	u.AddAdditionalDescription("test-service", "Additional description text")
+
+	err := u.Flush(context.Background(), hclutil.NewEvalContext())
+	require.NoError(t, err)
+}
+
+func TestUpdater__PostGraphAnnotationWithoutTitle(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	g := goldie.New(t, goldie.WithFixtureDir("testdata/fixture/"), goldie.WithNameSuffix(".golden"))
+	client := mock.NewMockMackerelClient(ctrl)
+	backend := mock.NewMockBackend(ctrl)
+
+	client.EXPECT().FindGraphAnnotations(gomock.Any(), gomock.Any(), gomock.Any()).Return([]*mackerel.GraphAnnotation{}, nil).Times(1)
+	client.EXPECT().CreateGraphAnnotation(gomock.Any()).DoAndReturn(
+		func(param *mackerel.GraphAnnotation) (*mackerel.GraphAnnotation, error) {
+			g.AssertJson(t, "updater_post_graph_annotation_without_title", param)
+			param.ID = "dummy-graph-annotation-id"
+			return param, nil
+		},
+	).Times(1)
+
+	svc := prepalert.NewMackerelService(client)
+	body := LoadJSON[prepalert.WebhookBody](t, "example_webhook.json")
+	u := svc.NewMackerelUpdater(&body, backend)
+	u.AddService("test-service")
+	u.AddAdditionalDescription("test-service", "Additional description text")
+
+	err := u.Flush(context.Background(), hclutil.NewEvalContext())
+	require.NoError(t, err)
+}

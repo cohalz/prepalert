@@ -35,6 +35,7 @@ type PostGraphAnnotationAction struct {
 	app                       *App
 	ruleName                  string
 	service                   string
+	title                     string
 	additionalDescriptionExpr hcl.Expression
 	enable                    bool
 	dependsOnQueries          map[string]struct{}
@@ -204,6 +205,8 @@ func (action *PostGraphAnnotationAction) DecodeBody(body hcl.Body, evalCtx *hcl.
 				return diags
 			}
 			action.enable = true
+		case "title":
+			diags = diags.Extend(gohcl.DecodeExpression(attr.Expr, evalCtx, &action.title))
 		case "additional_description":
 			action.additionalDescriptionExpr = attr.Expr
 			registerQueryFQNs(attr.Expr, action.dependsOnQueries)
@@ -346,6 +349,9 @@ func (action *UpdateAlertAction) Execute(ctx context.Context, evalCtx *hcl.EvalC
 
 func (action *PostGraphAnnotationAction) Execute(ctx context.Context, evalCtx *hcl.EvalContext, u *MackerelUpdater) error {
 	u.AddService(action.service)
+	if action.title != "" {
+		u.AddTitle(action.service, action.title)
+	}
 	if action.additionalDescriptionExpr != nil {
 		additionalDescription, err := ExpressionToString(action.additionalDescriptionExpr, evalCtx)
 		if err != nil {

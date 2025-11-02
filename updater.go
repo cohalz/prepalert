@@ -23,6 +23,7 @@ type MackerelUpdater struct {
 	memoSectionSizeLimit   map[string]*int
 	additionalDescriptions map[string][]string
 	postServices           map[string]struct{}
+	titles                 map[string][]string
 }
 
 func (svc *MackerelService) NewMackerelUpdater(body *WebhookBody, backend Backend) *MackerelUpdater {
@@ -35,6 +36,7 @@ func (svc *MackerelService) NewMackerelUpdater(body *WebhookBody, backend Backen
 		memoSectionSizeLimit:   make(map[string]*int),
 		additionalDescriptions: make(map[string][]string),
 		postServices:           make(map[string]struct{}),
+		titles:                 make(map[string][]string),
 	}
 }
 
@@ -53,12 +55,21 @@ func (u *MackerelUpdater) AddService(service string) {
 	if _, ok := u.additionalDescriptions[service]; !ok {
 		u.additionalDescriptions[service] = make([]string, 0)
 	}
+	if _, ok := u.titles[service]; !ok {
+		u.titles[service] = make([]string, 0)
+	}
 }
 
 func (u *MackerelUpdater) AddAdditionalDescription(service string, text string) {
 	u.mu.Lock()
 	defer u.mu.Unlock()
 	u.additionalDescriptions[service] = append(u.additionalDescriptions[service], text)
+}
+
+func (u *MackerelUpdater) AddTitle(service string, title string) {
+	u.mu.Lock()
+	defer u.mu.Unlock()
+	u.titles[service] = append(u.titles[service], title)
 }
 
 const (
@@ -153,8 +164,14 @@ func (u *MackerelUpdater) Flush(ctx context.Context, evalCtx *hcl.EvalContext) e
 				description += text + "\n"
 			}
 			slog.DebugContext(ctx, "dump description", "description", description)
+
+			title := fmt.Sprintf("prepalert alert_id=%s", body.Alert.ID)
+			if len(u.titles[service]) > 0 {
+				title = u.titles[service][len(u.titles[service])-1]
+			}
+
 			err := u.svc.PostGraphAnnotation(ctx, &mackerel.GraphAnnotation{
-				Title:       fmt.Sprintf("prepalert alert_id=%s", body.Alert.ID),
+				Title:       title,
 				Description: description,
 				From:        body.Alert.OpenedAt,
 				To:          to,
